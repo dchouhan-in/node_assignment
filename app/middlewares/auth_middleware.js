@@ -49,7 +49,6 @@ function verifyJwt(token, req, res, next) {
 
         verifyPassword(mail, decoded, req, res, next)
 
-        console.log(decoded);
 
     });
 

@@ -49,14 +49,26 @@ app.post('/register', asyncHandler(async (req, res) => {
 
 
     if (!user) {
-        try {
-            await createUser(mail, password)
-            let token = signToken(mail, password)
-            return res.status(HttpStatusCode.Created).send(token)
-        } catch (error) {
-            return res.status(HttpStatusCode.InternalServerError).send()
-        }
+        await generateTokenForNewUser(mail, password, res)
+    } else {
+        await generateTokenForExistngUser(mail, password, user, res)
     }
+
+
+}))
+
+async function generateTokenForNewUser(mail, password, res) {
+
+    try {
+        await createUser(mail, password)
+        let token = signToken(mail, password)
+        return res.status(HttpStatusCode.Created).send({ token })
+    } catch (error) {
+        return res.status(HttpStatusCode.InternalServerError).send()
+    }
+}
+
+async function generateTokenForExistngUser(mail, password, user, res) {
 
     if (mail != user.mail) {
         return res.status(HttpStatusCode.NotFound).send("mail not found!")
@@ -65,12 +77,11 @@ app.post('/register', asyncHandler(async (req, res) => {
     const isPassValid = await validatePassword(password, user)
     if (isPassValid) {
         let token = signToken(mail, password)
-        return res.status(HttpStatusCode.Ok).send(token)
+        return res.status(HttpStatusCode.Ok).send({ token })
     } else {
         return res.status(HttpStatusCode.NotFound).send("invalid pass!")
     }
-
-}))
+}
 
 
 
@@ -114,8 +125,6 @@ app.get('/counter', authorize, asyncHandler(async (req, res) => {
 }))
 
 app.post('/reset', authorize, asyncHandler(async (req, res) => {
-    console.log(req.body);
-
 
     let resetTo = req.body.count
 
