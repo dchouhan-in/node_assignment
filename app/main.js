@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt')
 var jwt = require('jsonwebtoken');
 const { HttpStatusCode } = require('axios');
 
+const authorize = require('./middlewares/auth_middleware')
 var bodyParser = require('body-parser')
 
 const asyncHandler = require("express-async-handler");
@@ -20,6 +21,8 @@ const MONGO_PORT = process.env.MONGO_PORT
 const MONGO_DB = process.env.MONGO_DB
 
 const MONGO_URL = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DB}?authSource=admin`
+
+//TODO:// remove this hardcoded private key in future
 const privateKey = String.raw`-----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDJp+h7I1/FL83F
 4dRpVKRW0g1fqdPJovu5BcM0pkVtT5eDWZ+WBzhVSU5qii/QIQ0vw8LU51k+DLbV
@@ -55,6 +58,7 @@ const UserSchema = new mongoose.Schema({
     mail: String,
     password: String,
     salt: String,
+    counter: Number
 });
 
 const User = mongoose.model('User', UserSchema);
@@ -129,11 +133,18 @@ async function createUser(mail, password) {
 
     bcrypt.genSalt(10, function (err, salt) {
         bcrypt.hash(password, salt, (err, hash) => {
-            return User.create({ mail, password: hash, salt })
+            return User.create({ mail, password: hash, salt, counter: 0 })
         });
     });
 }
 
+app.get('/counter', authorize, asyncHandler(async (req, res) => {
+
+}))
+
 app.listen(port, () => {
     console.log(`listening on port ${port}`)
 })
+
+
+module.exports = privateKey;
