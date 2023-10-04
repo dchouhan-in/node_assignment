@@ -138,6 +138,14 @@ app.post('/reset', authorize, asyncHandler(async (req, res) => {
 
 }))
 
+app.post('/current', authorize, asyncHandler(async (req, res) => {
+
+    let count = req.body.count
+
+    return res.status(HttpStatusCode.Ok).send({ count });
+
+}))
+
 app.listen(port, () => {
     console.log(`listening on port ${port}`)
 })
