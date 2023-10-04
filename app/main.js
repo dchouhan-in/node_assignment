@@ -10,6 +10,7 @@ var bodyParser = require('body-parser')
 
 const asyncHandler = require("express-async-handler");
 
+const validatePassword = require("./utils/common");
 
 var jsonParser = bodyParser.json()
 
@@ -20,7 +21,6 @@ const config = process.env
 const fs = require('fs');
 
 const path = require('path');
-const { validatePassword } = require('./utils/common');
 fs.readFile(path.resolve(__dirname, "./secrets/secret.key"), 'utf-8', (err, data) => {
     privateKey = data.trim()
 })
@@ -31,9 +31,10 @@ mongoose.connect(config.MONGO_URL, { user: config.MONGO_USER, pass: config.MONGO
 const User = mongoose.models.User
 
 const app = express()
+app.use(jsonParser)
 const port = 3000
 
-app.post('/register', jsonParser, asyncHandler(async (req, res) => {
+app.post('/register', asyncHandler(async (req, res) => {
 
     const { mail, password } = req.body
 
@@ -93,15 +94,41 @@ async function createUser(mail, password) {
 }
 
 app.get('/counter', authorize, asyncHandler(async (req, res) => {
-    return res.status(HttpStatusCode.BadRequest).send("provide email and password");
+    let mail = res.locals.mail
+    let count_incr = res.locals.counter + 1
+
+
+    if (mail) {
+        try {
+            user = await User.findOneAndUpdate({ mail }, { counter: count_incr })
+
+        } catch (error) {
+
+            return res.status(HttpStatusCode.InternalServerError).send("error!");
+
+        }
+    }
+
+
+    return res.status(HttpStatusCode.Ok).send({ count: count_incr });
 }))
 
-app.post('/reset', jsonParser, authorize, asyncHandler(async (req, res) => {
+app.post('/reset', authorize, asyncHandler(async (req, res) => {
+    console.log(req.body);
+
+
+    let resetTo = req.body.count
+
+    let mail = res.locals.mail
+
+    if (mail) {
+        await User.findOneAndUpdate({ mail }, { counter: resetTo })
+    }
+
+    return res.status(HttpStatusCode.Ok).send({ count: resetTo });
 
 }))
 
 app.listen(port, () => {
     console.log(`listening on port ${port}`)
 })
-
-module.exports = { validatePassword }

@@ -32,11 +32,11 @@ const authorize = (req, res, next) => {
         return res.status(403).send("provide token!");
     }
 
-    verifyJwt(token, res, next)
-    return next();
+    verifyJwt(token, req, res, next)
+    // TODO: understand this weird behaviour when next was here!
 };
 
-function verifyJwt(token, res, next) {
+function verifyJwt(token, req, res, next) {
     jwt.verify(token, publicKey, function (err, decoded) {
         if (err) {
             return res.status(401).send("Invalid Token");
@@ -47,7 +47,7 @@ function verifyJwt(token, res, next) {
             return res.status(HttpStatusCode.BadRequest).send("provide email and password");
         }
 
-        verifyPassword(mail, decoded, res, next)
+        verifyPassword(mail, decoded, req, res, next)
 
         console.log(decoded);
 
@@ -55,7 +55,7 @@ function verifyJwt(token, res, next) {
 
 }
 
-function verifyPassword(mail, decoded, res, next) {
+function verifyPassword(mail, decoded, req, res, next) {
 
     User.findOne({ mail }).then((user) => {
         if (!user) {
@@ -64,7 +64,8 @@ function verifyPassword(mail, decoded, res, next) {
 
         validatePassword(decoded.password, user).then((isPassValid) => {
             if (isPassValid) {
-                res.local
+                res.locals.mail = mail
+                res.locals.counter = user.counter
                 return next();
             }
             return res.status(HttpStatusCode.Unauthorized).send("invalid password!");
